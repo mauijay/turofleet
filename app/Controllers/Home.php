@@ -6,6 +6,9 @@ class Home extends BaseController
 {
     public function index(): string
     {
-        return view('welcome_message');
+        return view('fleet_command_center/index', [
+            'commandCenter' => service('fleetCommandCenterViewModelService')->forToday(),
+            'assets' => service('assetManifestService')->appAssets(),
+        ]);
     }
 }

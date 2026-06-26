@@ -3,6 +3,7 @@
 namespace Config;
 
 use App\Repositories\FleetIntelligenceRepository;
+use App\Services\Fleet\FleetCommandCenterViewModelService;
 use App\Services\Fleet\FleetCommandService;
 use App\Services\Fleet\FleetHealthService;
 use App\Services\Fleet\FleetStatisticsService;
@@ -10,6 +11,7 @@ use App\Services\Fleet\RevenueService;
 use App\Services\Fleet\TaskService;
 use App\Services\Fleet\TripAnalyticsService;
 use App\Services\Fleet\VehicleAvailabilityService;
+use App\Services\View\AssetManifestService;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -102,5 +104,30 @@ class Services extends BaseService
             static::vehicleAvailabilityService(),
             static::taskService(),
         );
+    }
+
+    public static function fleetCommandCenterViewModelService(bool $getShared = true): FleetCommandCenterViewModelService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('fleetCommandCenterViewModelService');
+        }
+
+        return new FleetCommandCenterViewModelService(
+            static::fleetCommandService(),
+            static::fleetStatisticsService(),
+            static::fleetHealthService(),
+            static::taskService(),
+            static::vehicleAvailabilityService(),
+            static::tripAnalyticsService(),
+        );
+    }
+
+    public static function assetManifestService(bool $getShared = true): AssetManifestService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('assetManifestService');
+        }
+
+        return new AssetManifestService();
     }
 }

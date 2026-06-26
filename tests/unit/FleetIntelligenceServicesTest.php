@@ -1,6 +1,7 @@
 <?php
 
 use App\Repositories\FleetIntelligenceRepository;
+use App\Services\Fleet\FleetCommandCenterViewModelService;
 use App\Services\Fleet\FleetCommandService;
 use App\Services\Fleet\FleetHealthService;
 use App\Services\Fleet\FleetStatisticsService;
@@ -304,6 +305,64 @@ final class FleetIntelligenceServicesTest extends CIUnitTestCase
         $this->assertSame([], $snapshot['weather_alerts']);
     }
 
+    public function testFleetCommandCenterViewModelReturnsPredictableUiContract(): void
+    {
+        $command = $this->getMockBuilder(FleetCommandService::class)->disableOriginalConstructor()->onlyMethods(['snapshot'])->getMock();
+        $statistics = $this->getMockBuilder(FleetStatisticsService::class)->disableOriginalConstructor()->onlyMethods(['summary', 'vehiclePerformance'])->getMock();
+        $health = $this->getMockBuilder(FleetHealthService::class)->disableOriginalConstructor()->onlyMethods(['summary'])->getMock();
+        $tasks = $this->getMockBuilder(TaskService::class)->disableOriginalConstructor()->onlyMethods(['today', 'tomorrow'])->getMock();
+        $availability = $this->getMockBuilder(VehicleAvailabilityService::class)->disableOriginalConstructor()->onlyMethods(['timeline'])->getMock();
+        $analytics = $this->getMockBuilder(TripAnalyticsService::class)->disableOriginalConstructor()->onlyMethods(['summary'])->getMock();
+
+        $command->method('snapshot')->willReturn([
+            'as_of' => '2026-06-15 08:00:00',
+            'fleet_status' => ['available' => 1, 'reserved' => 0, 'in_progress' => 0, 'cleaning' => 0, 'maintenance' => 0, 'out_of_service' => 0],
+            'vehicle_statuses' => [[
+                'fleet_vehicle_id' => 8,
+                'fleet_code' => 'Spaceship-008',
+                'display_name' => 'Spaceship-008',
+                'model' => '2026 Tesla Model Y',
+                'is_premium' => true,
+                'status' => 'available',
+                'next_reservation' => null,
+                'current_battery' => null,
+                'current_location' => null,
+                'current_odometer' => null,
+                'cleaning_status' => 'ready',
+            ]],
+            'todays_timeline' => [],
+            'todays_pickups' => [],
+            'todays_returns' => [],
+            'airport_deliveries' => [],
+            'urgent_items' => ['claims' => [], 'maintenance_tasks' => [], 'registration_renewals' => [], 'insurance_renewals' => [], 'battery_alerts' => []],
+            'weather_alerts' => [],
+            'traffic_alerts' => [],
+        ]);
+        $statistics->method('summary')->willReturn($this->statisticsSummary());
+        $statistics->method('vehiclePerformance')->willReturn([['fleet_code' => 'Spaceship-008', 'utilization' => 0.75]]);
+        $health->method('summary')->willReturn($this->healthSummary());
+        $tasks->method('today')->willReturn($this->emptyTasks());
+        $tasks->method('tomorrow')->willReturn($this->emptyTasks());
+        $availability->method('timeline')->willReturn([]);
+        $analytics->method('summary')->willReturn(['average_trip_length' => 2.5, 'utilization' => 0.6]);
+
+        $viewModel = (new FleetCommandCenterViewModelService($command, $statistics, $health, $tasks, $availability, $analytics))
+            ->forToday(new DateTimeImmutable('2026-06-15 08:00:00'));
+
+        $this->assertSame('Fleet Command Center', $viewModel['page_title']);
+        $this->assertTrue($viewModel['mission_clear']);
+        $this->assertCount(8, $viewModel['fleet_status']);
+        $this->assertSame('Premium', $viewModel['vehicles'][0]['segment']);
+        $this->assertSame('info', $viewModel['vehicles'][0]['segment_tone']);
+        $this->assertSame('2026 Tesla Model Y', $viewModel['vehicles'][0]['model_label']);
+        $this->assertSame('Open', $viewModel['vehicles'][0]['next_reservation_label']);
+        $this->assertSame('Reserved', $viewModel['activity']['weather_status']);
+        $this->assertSame('Reserved', $viewModel['activity']['traffic_status']);
+        $this->assertSame('Reserved', $viewModel['activity']['battery_status']);
+        $this->assertSame([], $viewModel['health_alerts']);
+        $this->assertSame('Reserved', $viewModel['future_integrations'][0]['status']);
+    }
+
     /** @param array<int, string> $methods */
     private function repositoryMock(array $methods): FleetIntelligenceRepository&MockObject
     {
@@ -311,5 +370,69 @@ final class FleetIntelligenceServicesTest extends CIUnitTestCase
             ->disableOriginalConstructor()
             ->onlyMethods($methods)
             ->getMock();
+    }
+
+    /** @return array<string, mixed> */
+    private function statisticsSummary(): array
+    {
+        return [
+            'fleet_size' => 1,
+            'available_vehicles' => 1,
+            'reserved_vehicles' => 0,
+            'in_progress_vehicles' => 0,
+            'maintenance_required' => 0,
+            'claim_open' => 0,
+            'vehicles_out_of_service' => 0,
+            'current_month' => [
+                'completed_revenue' => 1000.0,
+                'forecast_revenue' => 250.0,
+                'cash_flow' => 900.0,
+                'operating_profit' => 800.0,
+                'fleet_utilization' => 0.5,
+                'average_daily_rate' => 100.0,
+                'revenue_per_available_day' => 50.0,
+                'revenue_per_vehicle' => 1000.0,
+            ],
+            'fleet_value' => ['fleet_value' => 50000.0, 'loan_balance' => 25000.0, 'fleet_equity' => 25000.0],
+            'premium_vs_base' => [['group' => 'premium', 'completed_revenue' => 1000.0], ['group' => 'base', 'completed_revenue' => 0.0]],
+            'lifetime_revenue' => 10000.0,
+            'lifetime_profit' => 2500.0,
+            'vehicle_roi' => [['roi' => 0.2]],
+        ];
+    }
+
+    /** @return array<string, array<int, array<string, mixed>>> */
+    private function healthSummary(): array
+    {
+        return [
+            'vehicles_needing_cleaning' => [],
+            'vehicles_due_for_maintenance' => [],
+            'registration_expiring' => [],
+            'insurance_expiring' => [],
+            'loan_payment_due' => [],
+            'claims_requiring_follow_up' => [],
+            'vehicles_below_battery_threshold' => [],
+            'missing_photos' => [],
+            'missing_documents' => [],
+            'missing_turo_listing_data' => [],
+            'incomplete_vehicle_setup' => [],
+        ];
+    }
+
+    /** @return array<string, array<int, array<string, mixed>>> */
+    private function emptyTasks(): array
+    {
+        return [
+            'todays_pickups' => [],
+            'todays_returns' => [],
+            'cleaning_tasks' => [],
+            'charging_tasks' => [],
+            'airport_deliveries' => [],
+            'maintenance_tasks' => [],
+            'registration_renewals' => [],
+            'insurance_renewals' => [],
+            'loan_payments' => [],
+            'claims' => [],
+        ];
     }
 }

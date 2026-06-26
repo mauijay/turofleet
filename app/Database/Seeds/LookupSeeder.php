@@ -38,6 +38,7 @@ class LookupSeeder extends Seeder
             'delivery_status' => ['Delivery Status', ['scheduled' => 'Scheduled', 'completed' => 'Completed', 'canceled' => 'Canceled']],
             'import_type' => ['Import Type', ['turo_trips' => 'Turo Trips', 'turo_transactions' => 'Turo Transactions']],
             'import_status' => ['Import Status', ['pending' => 'Pending', 'processing' => 'Processing', 'completed' => 'Completed', 'failed' => 'Failed']],
+            'import_error_severity' => ['Import Error Severity', ['info' => 'Info', 'warning' => 'Warning', 'error' => 'Error']],
             'trip_status' => ['Trip Status', [
                 'booked' => 'Booked',
                 'in_progress' => 'In Progress',

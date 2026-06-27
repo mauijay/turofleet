@@ -61,10 +61,18 @@
                 </div>
             </section>
 
+            <section class="section" id="decision-support" aria-labelledby="decision-support-heading">
+                <div class="section-heading">
+                    <p class="eyebrow">Decision Support</p>
+                    <h2 id="decision-support-heading">Recommendations</h2>
+                </div>
+                <?= view('fleet_command_center/components/recommendations_panel', ['decisionSupport' => $commandCenter['decision_support']]) ?>
+            </section>
+
             <section class="section" id="fleet-activity" aria-labelledby="fleet-activity-heading">
                 <div class="section-heading split-heading">
                     <div>
-                        <p class="eyebrow">Every Spaceship</p>
+                        <p class="eyebrow">Fleet Vehicles</p>
                         <h2 id="fleet-activity-heading">Fleet Activity</h2>
                     </div>
                     <a class="text-link" href="#fleet-timeline">Open timeline</a>

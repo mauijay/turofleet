@@ -1,6 +1,7 @@
 <?php
 
 use App\Repositories\FleetIntelligenceRepository;
+use App\Services\Fleet\DecisionSupport\DecisionSupportDashboardService;
 use App\Services\Fleet\FleetCommandCenterViewModelService;
 use App\Services\Fleet\FleetCommandService;
 use App\Services\Fleet\FleetHealthService;
@@ -313,6 +314,7 @@ final class FleetIntelligenceServicesTest extends CIUnitTestCase
         $tasks = $this->getMockBuilder(TaskService::class)->disableOriginalConstructor()->onlyMethods(['today', 'tomorrow'])->getMock();
         $availability = $this->getMockBuilder(VehicleAvailabilityService::class)->disableOriginalConstructor()->onlyMethods(['timeline'])->getMock();
         $analytics = $this->getMockBuilder(TripAnalyticsService::class)->disableOriginalConstructor()->onlyMethods(['summary'])->getMock();
+        $decisionSupport = $this->getMockBuilder(DecisionSupportDashboardService::class)->disableOriginalConstructor()->onlyMethods(['recommendations'])->getMock();
 
         $command->method('snapshot')->willReturn([
             'as_of' => '2026-06-15 08:00:00',
@@ -345,8 +347,17 @@ final class FleetIntelligenceServicesTest extends CIUnitTestCase
         $tasks->method('tomorrow')->willReturn($this->emptyTasks());
         $availability->method('timeline')->willReturn([]);
         $analytics->method('summary')->willReturn(['average_trip_length' => 2.5, 'utilization' => 0.6]);
+        $decisionSupport->method('recommendations')->willReturn([
+            'todays_recommendations' => [['title' => 'Pricing rec', 'priority' => 'High', 'confidence' => 90]],
+            'pricing' => [],
+            'maintenance' => [],
+            'fleet_health' => [],
+            'revenue' => [],
+            'guest_risk' => [],
+            'business_insights' => [],
+        ]);
 
-        $viewModel = (new FleetCommandCenterViewModelService($command, $statistics, $health, $tasks, $availability, $analytics))
+        $viewModel = (new FleetCommandCenterViewModelService($command, $statistics, $health, $tasks, $availability, $analytics, $decisionSupport))
             ->forToday(new DateTimeImmutable('2026-06-15 08:00:00'));
 
         $this->assertSame('Fleet Command Center', $viewModel['page_title']);
@@ -359,6 +370,7 @@ final class FleetIntelligenceServicesTest extends CIUnitTestCase
         $this->assertSame('Reserved', $viewModel['activity']['weather_status']);
         $this->assertSame('Reserved', $viewModel['activity']['traffic_status']);
         $this->assertSame('Reserved', $viewModel['activity']['battery_status']);
+        $this->assertSame('Pricing rec', $viewModel['decision_support']['todays_recommendations'][0]['title']);
         $this->assertSame([], $viewModel['health_alerts']);
         $this->assertSame('Reserved', $viewModel['future_integrations'][0]['status']);
     }

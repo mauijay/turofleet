@@ -1,0 +1,16 @@
+v0.1.0  Foundation                 ✓
+v0.2.0  Import Engine             ✓
+v0.3.0  Fleet Intelligence        ✓
+v0.4.0  Fleet Command Center      ✓
+
+v0.5.0  Decision Support          ← already built
+
+v0.6.0  FleetOS Platform Services ← moved here
+
+v0.7.0  Public Website
+
+v0.8.0  Tesla Integration
+
+v0.9.0  SaaS Readiness
+
+v1.0.0  FleetOS Production

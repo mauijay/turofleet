@@ -1,0 +1,7 @@
+FleetOS is currently deployed for a single fleet.
+
+However, every architectural decision should assume the possibility of supporting multiple independent companies in the future.
+
+Do not prematurely add unnecessary complexity.
+
+Instead, avoid making design decisions that would prevent future multi-company support.

@@ -2,6 +2,7 @@
 
 namespace App\Services\Fleet;
 
+use App\Services\Fleet\DecisionSupport\DecisionSupportDashboardService;
 use DateTimeImmutable;
 
 class FleetCommandCenterViewModelService
@@ -13,6 +14,7 @@ class FleetCommandCenterViewModelService
         private readonly ?TaskService $taskService = null,
         private readonly ?VehicleAvailabilityService $availabilityService = null,
         private readonly ?TripAnalyticsService $tripAnalyticsService = null,
+        private readonly ?DecisionSupportDashboardService $decisionSupportService = null,
     ) {
     }
 
@@ -30,6 +32,7 @@ class FleetCommandCenterViewModelService
         $timelineEnd = $timelineStart->modify('+7 days');
         $tripAnalytics = $this->tripAnalytics()->summary(new DateTimeImmutable($asOf->format('Y-01-01 00:00:00')), $timelineEnd);
         $vehiclePerformance = $this->statistics()->vehiclePerformance($asOf);
+        $decisionSupport = $this->decisionSupport()->recommendations($asOf);
 
         return [
             'page_title' => 'Fleet Command Center',
@@ -38,6 +41,7 @@ class FleetCommandCenterViewModelService
             'fleet_status' => $this->fleetStatusCards($statistics, $command),
             'mission' => $this->missionCards($today),
             'mission_clear' => $this->missionClear($today),
+            'decision_support' => $decisionSupport,
             'vehicles' => $this->vehicleCards($command['vehicle_statuses'], $health),
             'timeline' => $this->timelineCards($command['todays_timeline'], $timelineStart, $timelineEnd),
             'financial' => $this->financialSnapshot($currentMonth, $statistics),
@@ -53,6 +57,7 @@ class FleetCommandCenterViewModelService
     {
         return [
             ['label' => 'Fleet Command Center', 'href' => '/', 'active' => 'true'],
+            ['label' => 'Decision Support', 'href' => '#decision-support', 'active' => 'false'],
             ['label' => 'Fleet', 'href' => '#fleet-activity', 'active' => 'false'],
             ['label' => 'Reservations', 'href' => '#fleet-timeline', 'active' => 'false'],
             ['label' => 'Trips', 'href' => '#executive-kpis', 'active' => 'false'],
@@ -393,5 +398,10 @@ class FleetCommandCenterViewModelService
     private function tripAnalytics(): TripAnalyticsService
     {
         return $this->tripAnalyticsService ?? service('tripAnalyticsService');
+    }
+
+    private function decisionSupport(): DecisionSupportDashboardService
+    {
+        return $this->decisionSupportService ?? service('decisionSupportDashboardService');
     }
 }
